@@ -1,20 +1,20 @@
 const express = require  ('express');
 const router = express.Router();
 const vuelo = require('../modelo/modeloVuelo');
-<<<<<<< HEAD
 const sillas = require('../modelo/modeloSillas')
-=======
->>>>>>> 1ffbde7c0610f10d2c003cc6cd8bc813003a546a
 const bodyParser = require('body-parser');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const xoAuth2= require('xoauth2')
-<<<<<<< HEAD
-
-
 const destinos = require('../modelo/modeloDestinos')
 const todo = require('../modelo/modeloTodo')
+const controladorUsuario = require('../controladores/usuario')
+const pdf = require('html-pdf');
+const cuerpopdf = require('../modelo/tiquete'); // en esta linea estamos almacenando los archichivos html
+var promise;
 
+router.post('/registrar', controladorUsuario.registrar)
+router.post('/entrar', controladorUsuario.entrar)
 
 // get de el modelo todo incluido
 router.get('/todo', (req, res, next) => {
@@ -34,29 +34,25 @@ router.post('/todo', (req, res, next) => {
     }).catch(next)
 })
 
-=======
->>>>>>> 1ffbde7c0610f10d2c003cc6cd8bc813003a546a
 
 //agregar POST (create)
-
-
 router.get('/crearSillas',(req, res) => {
     const nuevasSillas= new sillas()
 
     for(i=0;i<47;i++){
-        nuevasSillas.PrimeraClase.push(false)
+        nuevasSillas.PrimeraClase.push({"silla":true})
     }
 
     for(i=0;i<93;i++){
-        nuevasSillas.Ejecutivo.push(false)
+        nuevasSillas.Ejecutivo.push({"silla":true})
     }
 
     for(i=0;i<187;i++){
-        nuevasSillas.Economica.push(false)
+        nuevasSillas.Economica.push({"silla":true})
     }
 
     for(i=0;i<140;i++){
-        nuevasSillas.Turistica.push(false)
+        nuevasSillas.Turistica.push({"silla":true})
     }
 
     nuevasSillas.save().then(()=>{
@@ -79,7 +75,7 @@ router.post('/sillas',(req, res) => {
     req.body.PrimeraClase.forEach((silla)=>{
         var clave = "PrimeraClase."+silla;
         var json = { };
-        json[clave] = true;
+        json[clave] = {"silla":false};
         var actualizar = { $set: json};
         console.log(actualizar)
         sillas.findOneAndUpdate({ _id: req.body.idAvion},actualizar,false).then(()=>{
@@ -92,7 +88,7 @@ router.post('/sillas',(req, res) => {
     req.body.Ejecutivo.forEach((silla)=>{
         var clave = "Ejecutivo."+silla;
         var json = { };
-        json[clave] = true;
+        json[clave] = {"silla":false};
         var actualizar = { $set: json};
         console.log(actualizar)
         sillas.findOneAndUpdate({ _id: req.body.idAvion},actualizar,false).then(()=>{
@@ -105,7 +101,7 @@ router.post('/sillas',(req, res) => {
     req.body.Economica.forEach((silla)=>{
         var clave = "Economica."+silla;
         var json = { };
-        json[clave] = true;
+        json[clave] = {"silla":false};
         var actualizar = { $set: json};
         console.log(actualizar)
         sillas.findOneAndUpdate({ _id: req.body.idAvion},actualizar,false).then(()=>{
@@ -118,7 +114,7 @@ router.post('/sillas',(req, res) => {
     req.body.Turistica.forEach((silla)=>{
         var clave = "Turistica."+silla;
         var json = { };
-        json[clave] = true;
+        json[clave] = {"silla":false};
         var actualizar = { $set: json};
         console.log(actualizar)
         sillas.findOneAndUpdate({ _id: req.body.idAvion},actualizar,false).then(()=>{
@@ -158,9 +154,81 @@ router.get('/turisticos', (req, res, next) => {
     }).catch(next)
 })
 
+// get de el modelo de los destinos turisticos
+router.get('/tasks/:pais', (req, res, next) => {
+    //db.collection.find()
+    destinos.find({pais : req.params.pais  }).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+
+router.get('/comidas', (req, res, next) => {
+    //db.collection.find()
+    comidas.find({ }).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+//bueno para pponer un post
+router.post('/tasks/comidas', (req, res, next) => {
+    //db.collection.insert( documento )
+    //req.body -> hace referencia al json documento = {nombre:"", año:"", activa:""}
+    comidas.create(req.body).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+// este es el post para los autos
+
+router.post('/autos', (req, res, next) => {
+    //db.collection.insert( documento )
+    //req.body -> hace referencia al json documento = {nombre:"", año:"", activa:""}
+    autos.create(req.body).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+//este es el metodo get para llamar a los  atuos.
+
+router.get('/autos', (req, res, next) => {
+    //db.collection.find()
+    autos.find({ }).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+
+
+//este es el post para los destinos turisticos
+router.post('/tasks/destinos', (req, res, next) => {
+    //db.collection.insert( documento )
+    //req.body -> hace referencia al json documento = {nombre:"", año:"", activa:""}
+    destinos.create(req.body).then((todo2) => {
+        res.send(todo2)
+    }).catch(next)
+})
+
+
+
+
+// buscar por algun destinos
+// router.get('/tasks/:pais', (req, res, next) => {
+//     //db.collection.find()
+//   destinos.find(req.params.pais).then((todo2) => {
+//         res.send(todo2)
+//     }).catch(next)
+// })
+
+//busca segund el pais
+router.get('/tasks/:pais2', async (req, res) => {
+    const task = await Task.findById(req.params.pais);
+    console.log(req.params.pais)
+    res.json(task);
+});
+
 
 //consultar -> get  - read
-
 router.get('/vuelo', (req, res, next) => {
     //db.collection.find()
   vuelo.find({  }).then((vuelo) => {
@@ -200,49 +268,60 @@ router.put('/sillas/:id', (req, res, next) => {
 })
 
 router.post('/correo',(req,res,next)=>{
-    console.log(req.body.receptor)
-    console.log(req.body.ticket)
-    const mensaje = `
+    promise= new Promise((resuelve, rechaza)=>{
+        pdf.create(cuerpopdf(req.body.info), {}).toFile('../tiquete.pdf', (err) => {
+            if(err) {
+                rechaza();
+            }
+            resuelve()// si no hay error en la creaccion se devuelve la promesa y es cuando react
+        });
+    }).then(()=>{
+        console.log(req.body.receptor)
+        const mensaje = `
     <h3>Confirmacion de los tiquetes</h3>
     <br>
     <p>Apreciado usuario, adjuntamos los tiquetes para que haga efectivo su vuelo, gracias por volar con nosotros</p>
   `;
 
-    let transportador = nodemailer.createTransport({
-        service:'gmail',
-        auth: {
-            type: "OAuth2",
-            user: "valhallaairlines@gmail.com",
-            clientId: "124253551329-j2hkma0406pqmipr7iaq1olhhestpelf.apps.googleusercontent.com",
-            clientSecret: "44B_vEabuFVKAeLgUDTjIRK9",
-            refreshToken: "1/dlkv6QzhjjREl_S0-Nvfwuv7RvC23tiUMEj05nH0_FHsY6NXV0rKrU0mGqRXHVaZ"
-        }
-    });
+        let transportador = nodemailer.createTransport({
+            service:'gmail',
+            auth: {
+                type: "OAuth2",
+                user: "valhallaairlines@gmail.com",
+                clientId: "124253551329-j2hkma0406pqmipr7iaq1olhhestpelf.apps.googleusercontent.com",
+                clientSecret: "44B_vEabuFVKAeLgUDTjIRK9",
+                refreshToken: "1/dlkv6QzhjjREl_S0-Nvfwuv7RvC23tiUMEj05nH0_FHsY6NXV0rKrU0mGqRXHVaZ"
+            }
+        });
 
-    // setup email data with unicode symbols
-    let mailOptions = {
-        from: '<valhallaairlines@gmail.com>', // sender address
-        to: req.body.receptor, // list of receivers
-        subject: 'Confirmacion de tiquetes', // Subject line
-        text: '', // plain text body
-        html: mensaje ,
-        attachments:[{
-            filename:'prueba.pdf',
-            path:__dirname+'/tickets/'+req.body.ticket
-        }]// html body
-    };
+        // Configuracion del email
+        let mailOptions = {
+            from: '<valhallaairlines@gmail.com>', // Direccion del que envia
+            to: req.body.receptor, // lista de receptores
+            subject: 'Confirmacion de tiquetes', // Asunto
+            text: '', // Texto plano
+            html: mensaje ,
+            attachments:[{
+                filename:'tiquete.pdf',
+                path:'../tiquete.pdf'
+            }]// html body
+        };
 
-    // send mail with defined transport object
-    transportador.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            return console.log('Hola '+error);
-        }
-        console.log('Mensaje enviado: %s', info.messageId);
-        console.log('URL: %s', nodemailer.getTestMessageUrl(info));
+        // Enviar el email con el objeto a transportar
+        transportador.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                return console.log('Hola '+error);
+            }
+            console.log('Mensaje enviado: %s', info.messageId);
+            console.log('URL: %s', nodemailer.getTestMessageUrl(info));
 
-        res.render('contact', {msg:'El mensaje ha sido enviado'});
-    });
+            res.send('El mensaje ha sido enviado');
+        });
+    }).catch((err)=>{
+        console.log(err.message)
+    })
 })
+
 
 
 //Eliminar - Delete
@@ -253,12 +332,17 @@ router.delete('/vuelo/:id', (req, res, next) => {
     }).catch(next)
 });
 
-// anidado
-router.get('/sillas/anidado', (req, res, next) => {
+
+// Traer sillas
+router.get('/traersillas', (req, res, next) => {
     //db.collection.find()
-  sillas.find({  }).then((vuelo) => {
-        res.send(vuelo)
+  sillas.find({ _id:'5da6a32e328b501c2220c34b'}).then((vuelo) => {
+        res.send(vuelo[0])
     }).catch(next)
 })
+
+
+
+
 
 module.exports = router
